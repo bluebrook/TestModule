@@ -40,7 +40,7 @@ def extract_names(filename):
   followed by the name-rank strings in alphabetical order.
   ['2006', 'Aaliyah 91', Aaron 57', 'Abagail 895', ' ...]
   """
-  print "This is my test changes"
+  # +++your code here+++
   return
 
 
