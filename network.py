@@ -6,21 +6,19 @@ bias_table = {}
 grad_weights_table = {}
 grad_bias_table = {}
 
-
 class Layer(object):
     """Represent a layer in Neuron Network"""
-    def __init__(self, input_width, width, activation=True):
+    def __init__(self, input_width, width, activation=None):
         self.width = width
         self.input_width = input_width
         self.activation = activation
-
-        #weighted input
+        # weighted input
         self.h = None
+        # after activation function
         self.output = None
         self.grad_input = None
         self.output = None
         self.index = None
-        self.activation_func = self.activation_func2
         self.is_last_layer = False
 
     @property
@@ -41,26 +39,50 @@ class Layer(object):
 
     def forward(self, input_data):
         # weighted input
-        self.h = input_data.dot(self.weights.T) + self.bias.T
-        self.output = self.activation_func(self.h)
+        self.h = np.dot(input_data, self.weights) + self.bias
+        (func, dev) = self.get_activation()
+        if func:
+            self.output = func(self.h)
+        else:
+            self.output = self.h
         self.debug_print()
 
     @staticmethod
     def activation_func1(x):
         return 1. / (1 + np.exp(-x))
-
+    
+    @staticmethod
+    def activation_dev1(output):
+        return output*(1-output)
+    
     @staticmethod
     def activation_func2(x):
         return max(x, 0)
-
+        
+    @staticmethod
+    def activation_dev2(output):
+        return np.sgn(output)
+        
+    def get_activation(self)
+        if self.activation == "sigmoid":
+            return (self.activation_func1, self.activation_dev1)
+        elif self.activation == "relu":
+            return (self.activation_func2, self.activation_dev2)
+        else
+            return (None, None)
+          
     def calculate_gradient(self, prev_grad):
-        if self.activation:
-            shared_grad = prev_grad * self.output * (1 - self.output)
-        else:
-            shared_grad = prev_grad
-        grad_weight = np.outer(shared_grad, self.prev_layer.output)
+        (func, dev) = self.get_activation()
+        
+        shared_grad = prev_grad
+        if not func:
+            shared_grad = shared_grad * dev(self.ouput)
+        nr_of_samples = prev_grad.shape[0]
+        grad_weight = 1/nr_of_sample * np.sum(np.outer(shared_grad, self.prev_layer.output), axis=0)
         grad_weights_table[self.index] = grad_weight
-        return shared_grad.T.dot(self.weights)
+        transfer_grad = np.dot(shared_grad, self.weight.T)
+        
+        return transfer_grad
 
     def update(self, learning_rate=0.1):
         self.weights -= learning_rate * self.grad_weight
